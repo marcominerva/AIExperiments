@@ -1,0 +1,14 @@
+﻿<Application
+    x:Class="EmotionML.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:EmotionML.Converters"
+    xmlns:local="using:EmotionML">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <converters:EmotionScoreToFontWeightConverter x:Key="EmotionScoreToFontWeightConverter" />
+        </ResourceDictionary>
+    </Application.Resources>
+
+</Application>
