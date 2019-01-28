@@ -3,48 +3,48 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Windows.Media;
 using Windows.Storage;
-using Windows.AI.MachineLearning.Preview;
+using Windows.Storage.Streams;
+using Windows.AI.MachineLearning;
 
 namespace AlarmML
 {
     public sealed class ModelInput
     {
-        public VideoFrame data { get; set; }
+        public ImageFeatureValue data; // BitmapPixelFormat: Bgra8, BitmapAlphaMode: Premultiplied, width: 227, height: 227
     }
 
     public sealed class ModelOutput
     {
-        public IList<string> classLabel { get; set; }
-        public IDictionary<string, float> loss { get; set; }
-        public ModelOutput()
-        {
-            this.classLabel = new List<string>();
-            this.loss = new Dictionary<string, float>()
-            {
-                { "fish", float.NaN },
-                { "flower", float.NaN },
-                { "stick_figure", float.NaN },
-            };
-        }
+        public TensorString classLabel; // shape(-1,1)
+        public IList<IDictionary<string,float>> loss;
     }
 
     public sealed class Model
     {
-        private LearningModelPreview learningModel;
-        public static async Task<Model> CreateModel(StorageFile file)
+        private LearningModel model;
+        private LearningModelSession session;
+        private LearningModelBinding binding;
+
+        public static async Task<Model> CreateFromStreamAsync(IRandomAccessStreamReference stream)
         {
-            LearningModelPreview learningModel = await LearningModelPreview.LoadModelFromStorageFileAsync(file);
-            Model model = new Model();
-            model.learningModel = learningModel;
-            return model;
+            var learningModel = new Model();
+            learningModel.model = await LearningModel.LoadFromStreamAsync(stream);
+            learningModel.session = new LearningModelSession(learningModel.model);
+            learningModel.binding = new LearningModelBinding(learningModel.session);
+
+            return learningModel;
         }
-        public async Task<ModelOutput> EvaluateAsync(ModelInput input) {
-            ModelOutput output = new ModelOutput();
-            LearningModelBindingPreview binding = new LearningModelBindingPreview(learningModel);
+
+        public async Task<ModelOutput> EvaluateAsync(ModelInput input)
+        {
             binding.Bind("data", input.data);
-            binding.Bind("classLabel", output.classLabel);
-            binding.Bind("loss", output.loss);
-            LearningModelEvaluationResultPreview evalResult = await learningModel.EvaluateAsync(binding, string.Empty);
+            var result = await session.EvaluateAsync(binding, "0");
+            var output = new ModelOutput
+            {
+                classLabel = result.Outputs["classLabel"] as TensorString,
+                loss = result.Outputs["loss"] as IList<IDictionary<string, float>>
+            };
+
             return output;
         }
     }

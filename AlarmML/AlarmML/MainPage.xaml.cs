@@ -15,21 +15,23 @@ using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
+using Windows.AI.MachineLearning;
 
 namespace AlarmML
 {
     public sealed partial class MainPage : Page
     {
+        private DispatcherTimer timeTimer;
+        private InkDrawingAttributes ida;
+        private Random random = new Random((int)DateTime.Now.Ticks);
+        private MediaElement mediaElement;
+        private bool animating = false;
+
+
         public MainPage()
         {
             this.InitializeComponent();
         }
-
-        DispatcherTimer timeTimer;
-        InkDrawingAttributes ida;
-        Random random = new Random((int)DateTime.Now.Ticks);
-        MediaElement mediaElement;
-        bool animating = false;
 
         private bool _alarmOn = true;
         private bool AlarmOn
@@ -41,7 +43,7 @@ namespace AlarmML
                 {
                     if (!value)
                     {
-                        RunAlarmOffAnimation();
+                        var task = RunAlarmOffAnimation();
                         mediaElement.Stop();
                         SubText.Text = $"Good Morning!";
                     }
@@ -67,14 +69,15 @@ namespace AlarmML
         {
             // load Model
             var file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///inkshapes.onnx"));
-            model = await Model.CreateModel(file);
-
+            model = await Model.CreateFromStreamAsync(file);
 
             #region setup InkCanvs, sound and timers
             currentShape = shapeLabels[random.Next(shapeLabels.Count)];
 
-            timeTimer = new DispatcherTimer();
-            timeTimer.Interval = TimeSpan.FromMilliseconds(100);
+            timeTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(100)
+            };
             timeTimer.Tick += Timer_Tick;
             timeTimer.Start();
 
@@ -82,15 +85,14 @@ namespace AlarmML
             var alarmFile = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///wakeup.m4a"));
             var stream = await alarmFile.OpenAsync(FileAccessMode.Read);
 
-            mediaElement = new MediaElement();
-            mediaElement.IsLooping = true;
-            mediaElement.AutoPlay = true;
+            mediaElement = new MediaElement
+            {
+                IsLooping = true,
+                AutoPlay = true
+            };
             mediaElement.SetSource(stream, alarmFile.ContentType);
 
-            Inker.InkPresenter.InputDeviceTypes =
-            CoreInputDeviceTypes.Pen |
-            CoreInputDeviceTypes.Touch |
-            CoreInputDeviceTypes.Mouse;
+            Inker.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen | CoreInputDeviceTypes.Touch | CoreInputDeviceTypes.Mouse;
 
             ida = InkDrawingAttributes.CreateForPencil();
             ida.Size = new Size(30, 30);
@@ -108,12 +110,12 @@ namespace AlarmML
         {
             var bitmap = Inker.GetCropedSoftwareBitmap(newWidth: 227, newHeight: 227, keepRelativeSize: true);
             var frame = VideoFrame.CreateWithSoftwareBitmap(bitmap);
-            var input = new ModelInput() { data = frame };
 
+            var input = new ModelInput() { data = ImageFeatureValue.CreateFromVideoFrame(frame) };
             var output = await model.EvaluateAsync(input);
 
-            var guessedTag = output.classLabel.First();
-            var guessedPercentage = output.loss.OrderByDescending(kv => kv.Value).First().Value;
+            var guessedTag = output.classLabel.GetAsVectorView().First();
+            var guessedPercentage = output.loss.FirstOrDefault().OrderByDescending(kv => kv.Value).First().Value;
 
             if (guessedPercentage < 0.9)
             {
@@ -170,7 +172,7 @@ namespace AlarmML
             var now = DateTime.Now;
             if (_alarmOn)
             {
-                RunAlarmAnimation();
+                var task = RunAlarmAnimation();
             }
 
             foreach (var stroke in Inker.InkPresenter.StrokeContainer.GetStrokes())
@@ -195,7 +197,10 @@ namespace AlarmML
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlarmOn) AlarmOn = true;
+            if (!AlarmOn)
+            {
+                AlarmOn = true;
+            }
 
             currentShape = shapeLabels[random.Next(shapeLabels.Count)];
             SubText.Text = $"draw {currentShape} to Snooze";

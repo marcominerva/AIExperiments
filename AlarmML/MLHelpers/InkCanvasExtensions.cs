@@ -32,8 +32,8 @@ namespace MLHelpers
 
         public static SoftwareBitmap GetSoftwareBitmap(this InkCanvas canvas, IEnumerable<InkStroke> strokes = null)
         {
-            CanvasDevice device = CanvasDevice.GetSharedDevice();
-            CanvasRenderTarget renderTarget = new CanvasRenderTarget(device, (int)canvas.ActualWidth, (int)canvas.ActualHeight, 96);
+            var device = CanvasDevice.GetSharedDevice();
+            var renderTarget = new CanvasRenderTarget(device, (int)canvas.ActualWidth, (int)canvas.ActualHeight, 96);
 
             using (var ds = renderTarget.CreateDrawingSession())
             {
@@ -52,7 +52,7 @@ namespace MLHelpers
             if (keepRelativeSize)
             {
                 // copy strokes, resize them, but keep the stroke size the same, tranlsate to as close to 0, 0 as possible
-                List<InkStroke> newStrokes = new List<InkStroke>();
+                var newStrokes = new List<InkStroke>();
                 var scaleX = (float)(newWidth / bounds.Width);
                 var scaleY = (float)(newHeight / bounds.Height);
                 var translateX = 1 - (float)bounds.X * scaleX;

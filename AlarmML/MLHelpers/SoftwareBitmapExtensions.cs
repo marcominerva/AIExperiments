@@ -20,18 +20,24 @@ namespace MLHelpers
         {
             var resourceCreator = CanvasDevice.GetSharedDevice();
             using (var canvasBitmap = CanvasBitmap.CreateFromSoftwareBitmap(resourceCreator, softwareBitmap))
-            using (var canvasRenderTarget = new CanvasRenderTarget(resourceCreator, newWidth, newHeight, canvasBitmap.Dpi))
-            using (var drawingSession = canvasRenderTarget.CreateDrawingSession())
-            using (var scaleEffect = new ScaleEffect())
             {
-                drawingSession.Clear(Colors.White);
+                using (var canvasRenderTarget = new CanvasRenderTarget(resourceCreator, newWidth, newHeight, canvasBitmap.Dpi))
+                {
+                    using (var drawingSession = canvasRenderTarget.CreateDrawingSession())
+                    {
+                        using (var scaleEffect = new ScaleEffect())
+                        {
+                            drawingSession.Clear(Colors.White);
 
-                scaleEffect.Source = canvasBitmap;
-                scaleEffect.Scale = new System.Numerics.Vector2(newWidth / canvasBitmap.SizeInPixels.Width, newHeight / canvasBitmap.SizeInPixels.Height);
-                drawingSession.DrawImage(scaleEffect);
-                drawingSession.Flush();
+                            scaleEffect.Source = canvasBitmap;
+                            scaleEffect.Scale = new System.Numerics.Vector2(newWidth / canvasBitmap.SizeInPixels.Width, newHeight / canvasBitmap.SizeInPixels.Height);
+                            drawingSession.DrawImage(scaleEffect);
+                            drawingSession.Flush();
 
-                return SoftwareBitmap.CreateCopyFromBuffer(canvasRenderTarget.GetPixelBytes().AsBuffer(), BitmapPixelFormat.Bgra8, (int)newWidth, (int)newHeight, BitmapAlphaMode.Premultiplied);
+                            return SoftwareBitmap.CreateCopyFromBuffer(canvasRenderTarget.GetPixelBytes().AsBuffer(), BitmapPixelFormat.Bgra8, (int)newWidth, (int)newHeight, BitmapAlphaMode.Premultiplied);
+                        }
+                    }
+                }
             }
         }
 
@@ -39,60 +45,77 @@ namespace MLHelpers
         {
             var resourceCreator = CanvasDevice.GetSharedDevice();
             using (var canvasBitmap = CanvasBitmap.CreateFromSoftwareBitmap(resourceCreator, softwareBitmap))
-            using (var canvasRenderTarget = new CanvasRenderTarget(resourceCreator, (float)bounds.Width, (float)bounds.Width, canvasBitmap.Dpi))
-            using (var drawingSession = canvasRenderTarget.CreateDrawingSession())
-            using (var cropEffect = new CropEffect())
-            using (var atlasEffect = new AtlasEffect())
             {
-                drawingSession.Clear(Colors.White);
+                using (var canvasRenderTarget = new CanvasRenderTarget(resourceCreator, (float)bounds.Width, (float)bounds.Width, canvasBitmap.Dpi))
+                {
+                    using (var drawingSession = canvasRenderTarget.CreateDrawingSession())
+                    {
+                        using (var cropEffect = new CropEffect())
+                        {
+                            using (var atlasEffect = new AtlasEffect())
+                            {
+                                drawingSession.Clear(Colors.White);
 
-                cropEffect.SourceRectangle = bounds;
-                cropEffect.Source = canvasBitmap;
+                                cropEffect.SourceRectangle = bounds;
+                                cropEffect.Source = canvasBitmap;
 
-                atlasEffect.SourceRectangle = bounds;
-                atlasEffect.Source = cropEffect;
-                
-                drawingSession.DrawImage(atlasEffect);
-                drawingSession.Flush();
+                                atlasEffect.SourceRectangle = bounds;
+                                atlasEffect.Source = cropEffect;
 
-                return SoftwareBitmap.CreateCopyFromBuffer(canvasRenderTarget.GetPixelBytes().AsBuffer(), BitmapPixelFormat.Bgra8, (int)bounds.Width, (int)bounds.Width, BitmapAlphaMode.Premultiplied);
+                                drawingSession.DrawImage(atlasEffect);
+                                drawingSession.Flush();
+
+                                return SoftwareBitmap.CreateCopyFromBuffer(canvasRenderTarget.GetPixelBytes().AsBuffer(), BitmapPixelFormat.Bgra8, (int)bounds.Width, (int)bounds.Width, BitmapAlphaMode.Premultiplied);
+                            }
+                        }
+                    }
+                }
             }
-
         }
 
         public static SoftwareBitmap CropAndResize(this SoftwareBitmap softwareBitmap, Rect bounds, float newWidth, float newHeight)
         {
             var resourceCreator = CanvasDevice.GetSharedDevice();
             using (var canvasBitmap = CanvasBitmap.CreateFromSoftwareBitmap(resourceCreator, softwareBitmap))
-            using (var canvasRenderTarget = new CanvasRenderTarget(resourceCreator, newWidth, newHeight, canvasBitmap.Dpi))
-            using (var drawingSession = canvasRenderTarget.CreateDrawingSession())
-            using (var scaleEffect = new ScaleEffect())
-            using (var cropEffect = new CropEffect())
-            using (var atlasEffect = new AtlasEffect())
             {
-                drawingSession.Clear(Colors.White);
+                using (var canvasRenderTarget = new CanvasRenderTarget(resourceCreator, newWidth, newHeight, canvasBitmap.Dpi))
+                {
+                    using (var drawingSession = canvasRenderTarget.CreateDrawingSession())
+                    {
+                        using (var scaleEffect = new ScaleEffect())
+                        {
+                            using (var cropEffect = new CropEffect())
+                            {
+                                using (var atlasEffect = new AtlasEffect())
+                                {
+                                    drawingSession.Clear(Colors.White);
 
-                cropEffect.SourceRectangle = bounds;
-                cropEffect.Source = canvasBitmap;
+                                    cropEffect.SourceRectangle = bounds;
+                                    cropEffect.Source = canvasBitmap;
 
-                atlasEffect.SourceRectangle = bounds;
-                atlasEffect.Source = cropEffect;
+                                    atlasEffect.SourceRectangle = bounds;
+                                    atlasEffect.Source = cropEffect;
 
-                scaleEffect.Source = atlasEffect;
-                scaleEffect.Scale = new System.Numerics.Vector2(newWidth / (float)bounds.Width, newHeight / (float)bounds.Height);
-                drawingSession.DrawImage(scaleEffect);
-                drawingSession.Flush();
+                                    scaleEffect.Source = atlasEffect;
+                                    scaleEffect.Scale = new System.Numerics.Vector2(newWidth / (float)bounds.Width, newHeight / (float)bounds.Height);
+                                    drawingSession.DrawImage(scaleEffect);
+                                    drawingSession.Flush();
 
-                return SoftwareBitmap.CreateCopyFromBuffer(canvasRenderTarget.GetPixelBytes().AsBuffer(), BitmapPixelFormat.Bgra8, (int)newWidth, (int)newHeight, BitmapAlphaMode.Premultiplied);
+                                    return SoftwareBitmap.CreateCopyFromBuffer(canvasRenderTarget.GetPixelBytes().AsBuffer(), BitmapPixelFormat.Bgra8, (int)newWidth, (int)newHeight, BitmapAlphaMode.Premultiplied);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
         public static async Task<bool> SaveToFile(this SoftwareBitmap softwareBitmap, StorageFile file)
         {
-            using (IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.ReadWrite))
+            using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
             {
                 // Create an encoder with the desired format
-                BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+                var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
 
                 // Set the software bitmap
                 encoder.SetSoftwareBitmap(softwareBitmap);
